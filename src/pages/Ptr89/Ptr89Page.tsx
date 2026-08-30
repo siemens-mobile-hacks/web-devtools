@@ -15,6 +15,7 @@ import {
 	type XRefResult,
 	usePtr89State,
 } from "@/pages/Ptr89/store/ptr89State";
+import { Viktor89 } from "@/pages/Ptr89/Viktor89";
 
 type ActiveTab = "search" | "xrefs";
 
@@ -37,6 +38,7 @@ const Ptr89Page: Component = () => {
 	const [activeTab, setActiveTab] = createSignal<ActiveTab>("search");
 	const [searchResult, setSearchResult] = createSignal<SearchResult>();
 	const [xrefResult, setXrefResult] = createSignal<XRefResult>();
+	const [patternSearched, setPatternSearched] = createSignal(false);
 	const [error, setError] = createSignal<string>();
 	const [adding, setAdding] = createSignal(false);
 	const [formatting, setFormatting] = createSignal(false);
@@ -189,6 +191,7 @@ const Ptr89Page: Component = () => {
 		} catch (err) {
 			setError(getErrorMessage(err));
 		} finally {
+			setPatternSearched(true);
 			setProgress(undefined);
 			setSearching(false);
 		}
@@ -489,6 +492,10 @@ const Ptr89Page: Component = () => {
 			<Show when={activeTab() === "xrefs" ? xrefResult() : undefined}>{(result) =>
 				<XRefResults result={result()} />
 			}</Show>
+
+			<Show when={patternSearched()}>
+				<Viktor89 />
+			</Show>
 		</>
 	);
 };

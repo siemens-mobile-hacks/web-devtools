@@ -1,0 +1,109 @@
+.ptr89-viktor {
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	z-index: 1030;
+	width: 3rem;
+	height: 3rem;
+	padding: 0;
+	border: 0;
+	background: none;
+	overflow: hidden;
+	animation: ptr89-viktor-show 400ms ease-out both;
+	transition: width 200ms ease-out, height 200ms ease-out;
+
+	&:hover,
+	&:focus-visible {
+		width: 7rem;
+		height: 7rem;
+	}
+
+	&.ptr89-viktor-hiding {
+		animation: ptr89-viktor-hide 250ms ease-in forwards;
+	}
+
+	img {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 7rem;
+		height: 7rem;
+	}
+}
+
+@keyframes ptr89-viktor-show {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes ptr89-viktor-hide {
+	to {
+		opacity: 0;
+	}
+}
+
+.ptr89-snowfall {
+	position: fixed;
+	inset: 0;
+	z-index: 1025;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.ptr89-snowflake {
+	position: absolute;
+	top: -5rem;
+	left: var(--ptr89-left);
+	width: var(--ptr89-size);
+	height: var(--ptr89-size);
+	opacity: 0;
+	animation: ptr89-snowfall var(--ptr89-duration) linear var(--ptr89-delay) forwards;
+	will-change: transform;
+
+	img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		animation: ptr89-sway var(--ptr89-sway-duration) ease-in-out var(--ptr89-delay) infinite alternate;
+		will-change: transform;
+	}
+}
+
+@keyframes ptr89-snowfall {
+	from {
+		opacity: 0;
+		transform: translate3d(0, -5rem, 0);
+	}
+
+	10%,
+	90% {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+		transform: translate3d(var(--ptr89-drift), calc(100vh + 10rem), 0);
+	}
+}
+
+@keyframes ptr89-sway {
+	from {
+		transform: translateX(var(--ptr89-sway-start)) rotate(-12deg);
+	}
+
+	to {
+		transform: translateX(var(--ptr89-sway-end)) rotate(12deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ptr89-viktor {
+		animation: none;
+		transition: none;
+	}
+
+	.ptr89-snowflake {
+		display: none;
+	}
+}
