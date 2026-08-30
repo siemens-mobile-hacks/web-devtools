@@ -18,6 +18,7 @@ const ROUTES = [
 	`/re`,
 	`/re/symbols`,
 	`/re/ptr89`,
+	`/re/c166-calculator`,
 
 	`/db`,
 	`/db/patches-map`,
