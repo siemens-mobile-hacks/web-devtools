@@ -12,9 +12,9 @@ export function createStoreWithApi<S extends object, A>(
 	options?: CreateStoreWithApiOptions<S>
 ): () => [store: S, api: A] {
 	const [store, setStore] = createRoot(() => {
-		return options?.persist
-			? makePersistedStore(createStore<S>(initialData()), options.persist)
-			: createStore<S>(initialData());
+		return options?.persist ?
+			makePersistedStore(createStore<S>(initialData()), options.persist) :
+			createStore<S>(initialData());
 	});
 	const api = createApi(store, setStore);
 	return () => [store, api];

@@ -26,7 +26,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 		{
 			title: "Reverse engineering",
 			links: [
-				{ label: "Patterns finder", href: "/re/ptr89", icon: "bi bi-search", disabled: true },
+				{ label: "Patterns finder", href: "/re/ptr89", icon: "bi bi-search" },
 				{ label: "Download symbols", href: "/re/symbols", icon: "bi bi-download" }
 			]
 		},

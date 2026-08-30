@@ -89,7 +89,7 @@ export default defineConfig({
 		 }),
 	],
 	optimizeDeps: {
-		exclude: [],
+		exclude: ['@sie-js/ptr89'],
 	},
 	server: {
 		port: 3000,

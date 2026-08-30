@@ -58,6 +58,10 @@ body {
 	overflow-y: scroll;
 }
 
+.form-control[size] {
+	width: auto;
+}
+
 .table-sticky-header {
 	thead tr {
 		position: sticky;

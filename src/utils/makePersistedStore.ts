@@ -36,14 +36,11 @@ export function makePersistedStore<T>(store: [Store<T>, SetStoreFunction<T>], op
 	const storedValue = skipLoad ? null : storage.getItem(name);
 	if (storedValue !== null) {
 		const parsed = deserialize(storedValue) as PersistentStoreInternal;
-		if (parsed != null && parsed.version !== null) {
-			const typedState = parsed.state as T;
-			if (parsed.version !== version) {
-				parsed.state = migrate(typedState, parsed.version);
-				parsed.version = version;
-			}
-			parsed.state = merge(typedState, unwrap(store[0]));
-			store[1](reconcile(typedState));
+		if (parsed != null && typeof parsed.version === "number") {
+			const persistedState = parsed.version === version ?
+				parsed.state as T :
+				migrate(parsed.state as T, parsed.version);
+			store[1](reconcile(merge(persistedState, unwrap(store[0]))));
 		}
 	}
 
