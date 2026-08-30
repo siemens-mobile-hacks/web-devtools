@@ -5,7 +5,6 @@ import {
 	type Ptr89SearchType,
 	type Ptr89XRefType,
 } from "@sie-js/ptr89";
-import { formatAddress } from "@/utils/format";
 import {
 	type AddressSpace,
 	type FullflashMatch,
@@ -13,6 +12,11 @@ import {
 	type XRefResult,
 	usePtr89State,
 } from "@/pages/Ptr89/store/ptr89State";
+import {
+	physicalToC166CodePointer,
+	physicalToC166DataPointer,
+} from "@/utils/c166";
+import { formatAddress, formatLittleEndian32 } from "@/utils/format";
 
 interface SearchResultsProps {
 	result: SearchResult;
@@ -22,18 +26,14 @@ interface XRefResultsProps {
 	result: XRefResult;
 }
 
-const formatAddressBytes = (value: number) => [0, 8, 16, 24]
-	.map((shift) => ((value >>> shift) & 0xFF).toString(16).toUpperCase().padStart(2, "0"))
-	.join(" ");
-
 const formatC166Pointer = (value: number, addressSpace: AddressSpace) => {
-	const pageSize = addressSpace === "data" ? 0x4000 : 0x10000;
-	const pageWidth = addressSpace === "data" ? 4 : 2;
-	const offset = value % pageSize;
-	const page = Math.floor(value / pageSize);
+	const pointer = addressSpace === "data" ?
+		physicalToC166DataPointer(value) :
+		physicalToC166CodePointer(value);
+	const page = "page" in pointer ? pointer.page : pointer.segment;
 	return {
-		pointer: `${page.toString(16).toUpperCase().padStart(pageWidth, "0")}:${offset.toString(16).toUpperCase().padStart(4, "0")}`,
-		bytes: formatAddressBytes((page << 16) | offset),
+		pointer: `${page.toString(16).toUpperCase().padStart(addressSpace === "data" ? 4 : 2, "0")}:${pointer.offset.toString(16).toUpperCase().padStart(4, "0")}`,
+		bytes: formatLittleEndian32(page * 0x10000 + pointer.offset),
 	};
 };
 
@@ -44,7 +44,7 @@ const AddressCell: Component<{ address: number; showBytes: boolean; fullflashNam
 		</Show>
 		<div>{formatAddress(props.address)}</div>
 		<Show when={props.showBytes}>
-			<code class="d-block text-nowrap">{formatAddressBytes(props.address)}</code>
+			<code class="d-block text-nowrap">{formatLittleEndian32(props.address)}</code>
 		</Show>
 	</td>
 );

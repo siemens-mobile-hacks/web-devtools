@@ -1,0 +1,9 @@
+.c166-calculator-input {
+	&--bytes {
+		margin-top: 0.25rem;
+	}
+}
+
+.c166-calculator-input.c166-calculator-input--source {
+	border-color: rgb(var(--bs-primary-rgb));
+}

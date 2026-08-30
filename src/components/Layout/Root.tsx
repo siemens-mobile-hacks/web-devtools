@@ -9,6 +9,7 @@ const SwilibMergePage = lazy(() => import("@/pages/SwilibMerge/SwilibMergePage")
 const SwilibMergeEditorPage = lazy(() => import("@/pages/SwilibMerge/SwilibMergeEditorPage"));
 const ReFilesPage = lazy(() => import("@/pages/ReFiles/ReFilesPage"));
 const Ptr89Page = lazy(() => import("@/pages/Ptr89/Ptr89Page"));
+const C166CalculatorPage = lazy(() => import("@/pages/C166Calculator/C166CalculatorPage"));
 
 export const Root: Component = () => {
 	const showAppError = (err: any) => {
@@ -26,6 +27,7 @@ export const Root: Component = () => {
 				<Route path="/swilib/merge" component={SwilibMergePage} />
 				<Route path="/swilib/merge/editor" component={SwilibMergeEditorPage} />
 				<Route path="/re/ptr89" component={Ptr89Page} />
+				<Route path="/re/c166-calculator" component={C166CalculatorPage} />
 				<Route path="/re/symbols" component={ReFilesPage} />
 
 				{/* Legacy routes */}
