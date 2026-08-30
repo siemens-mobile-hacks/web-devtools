@@ -7,6 +7,7 @@ import {
 } from "@sie-js/ptr89";
 import {
 	type AddressSpace,
+	type Fullflash,
 	type FullflashMatch,
 	type SearchResult,
 	type XRefResult,
@@ -96,6 +97,29 @@ const BytesCell: Component<{ bytes?: string }> = (props) => {
 	);
 };
 
+const EmptyFullflashRow: Component<{
+	fullflash: Fullflash;
+	hasPointerColumn: boolean;
+	hasBytesColumn: boolean;
+	issue?: string;
+}> = (props) => (
+	<tr class={props.issue ? "table-danger" : "table-secondary"} title={props.issue}>
+		<td class="d-none d-sm-table-cell text-truncate" title={props.fullflash.name}>
+			{props.fullflash.name}
+		</td>
+		<td>
+			<strong class="d-block d-sm-none">{props.fullflash.name}</strong>
+		</td>
+		<td></td>
+		<Show when={props.hasPointerColumn}>
+			<td></td>
+		</Show>
+		<Show when={props.hasBytesColumn}>
+			<td></td>
+		</Show>
+	</tr>
+);
+
 const formatDuration = (duration: number) => duration < 1000 ?
 	`${Math.round(duration)} ms` :
 	`${(duration / 1000).toFixed(2)} s`;
@@ -124,19 +148,21 @@ const xrefTypeNames: Record<Ptr89XRefType, string> = {
 export const SearchResults: Component<SearchResultsProps> = (props) => {
 	const [ptr89State, ptr89] = usePtr89State();
 	const matchGroups = createMemo(() => {
-		const groups: FullflashMatch[][] = [];
+		const groups = new Map<string, FullflashMatch[]>();
 		for (const match of props.result.matches) {
-			const lastGroup = groups.at(-1);
-			if (lastGroup?.[0].fullflashId === match.fullflashId) {
-				lastGroup.push(match);
-			} else {
-				groups.push([match]);
-			}
+			const matches = groups.get(match.fullflashId) ?? [];
+			matches.push(match);
+			groups.set(match.fullflashId, matches);
 		}
-		return groups;
+
+		return props.result.fullflashes.map((fullflash) => ({
+			fullflash,
+			matches: groups.get(fullflash.id) ?? [],
+			issue: props.result.issues.find((issue) => issue.fullflashId === fullflash.id),
+		}));
 	});
-	const hasC166Matches = createMemo(() => props.result.matches.some((match) => match.arch === "c166"));
-	const resultColumnName = () => hasC166Matches() ? "Physical" : resultColumnNames[props.result.type];
+	const hasC166Fullflashes = createMemo(() => props.result.fullflashes.some((fullflash) => fullflash.arch === "c166"));
+	const resultColumnName = () => hasC166Fullflashes() ? "Physical" : resultColumnNames[props.result.type];
 	const resultSummary = () => `Found ${props.result.matches.length} ${formatResultType(props.result.type, props.result.matches.length)} in ${formatDuration(props.result.duration)}`;
 
 	return (
@@ -164,7 +190,7 @@ export const SearchResults: Component<SearchResultsProps> = (props) => {
 						checked={ptr89State.showAddressBytes}
 						onChange={(e) => ptr89.setState("showAddressBytes", e.currentTarget.checked)}
 					/>
-					<Show when={hasC166Matches()}>
+					<Show when={hasC166Fullflashes()}>
 						<span class="me-3">Address space:</span>
 						<Form.Check
 							inline
@@ -186,6 +212,8 @@ export const SearchResults: Component<SearchResultsProps> = (props) => {
 						/>
 					</Show>
 				</div>
+			</Show>
+			<Show when={props.result.fullflashes.length > 0}>
 				<table class="table table-bordered table-hover table-sticky-header font-monospace" style={{ width: "auto" }}>
 					<thead>
 						<tr>
@@ -198,7 +226,7 @@ export const SearchResults: Component<SearchResultsProps> = (props) => {
 							<th>
 								<small>Offset</small>
 							</th>
-							<Show when={hasC166Matches()}>
+							<Show when={hasC166Fullflashes()}>
 								<th>
 									<small title={ptr89State.addressSpace === "data" ? "PAG:POF" : "SEG:SOF"}>
 										Pointer
@@ -214,33 +242,45 @@ export const SearchResults: Component<SearchResultsProps> = (props) => {
 					</thead>
 					<For each={matchGroups()}>{(group) =>
 						<tbody>
-							<For each={group}>{(match, index) =>
-								<tr>
-									<td class="d-none d-sm-table-cell text-truncate" title={index() === 0 ? match.fullflashName : undefined}>
-										{index() === 0 ? match.fullflashName : ""}
-									</td>
-									<AddressCell
-										address={match.address}
-										showBytes={ptr89State.showAddressBytes}
-										fullflashName={index() === 0 ? match.fullflashName : undefined}
+							<Show
+								when={group.matches.length > 0}
+								fallback={
+									<EmptyFullflashRow
+										fullflash={group.fullflash}
+										hasPointerColumn={hasC166Fullflashes()}
+										hasBytesColumn={props.result.type === "address"}
+										issue={group.issue?.message}
 									/>
-									{match.offset === undefined ?
-										<td>-</td> :
-										<AddressCell address={match.offset} showBytes={ptr89State.showAddressBytes} />
-									}
-									<Show when={hasC166Matches()}>
-										<C166PointerCell
+								}
+							>
+								<For each={group.matches}>{(match, index) =>
+									<tr>
+										<td class="d-none d-sm-table-cell text-truncate" title={index() === 0 ? match.fullflashName : undefined}>
+											{index() === 0 ? match.fullflashName : ""}
+										</td>
+										<AddressCell
 											address={match.address}
-											arch={match.arch}
-											addressSpace={ptr89State.addressSpace}
 											showBytes={ptr89State.showAddressBytes}
+											fullflashName={index() === 0 ? match.fullflashName : undefined}
 										/>
-									</Show>
-									<Show when={props.result.type === "address"}>
-										<BytesCell bytes={match.bytes} />
-									</Show>
-								</tr>
-							}</For>
+										{match.offset === undefined ?
+											<td>-</td> :
+											<AddressCell address={match.offset} showBytes={ptr89State.showAddressBytes} />
+										}
+										<Show when={hasC166Fullflashes()}>
+											<C166PointerCell
+												address={match.address}
+												arch={match.arch}
+												addressSpace={ptr89State.addressSpace}
+												showBytes={ptr89State.showAddressBytes}
+											/>
+										</Show>
+										<Show when={props.result.type === "address"}>
+											<BytesCell bytes={match.bytes} />
+										</Show>
+									</tr>
+								}</For>
+							</Show>
 						</tbody>
 					}</For>
 				</table>

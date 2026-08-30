@@ -31,8 +31,9 @@ export interface FullflashMatch extends Ptr89SearchResult {
 }
 
 export interface SearchResult {
+	fullflashes: Fullflash[];
 	matches: FullflashMatch[];
-	issues: Array<{ fullflashName: string; message: string }>;
+	issues: Array<{ fullflashId: string; fullflashName: string; message: string }>;
 	type: Ptr89SearchType;
 	duration: number;
 }

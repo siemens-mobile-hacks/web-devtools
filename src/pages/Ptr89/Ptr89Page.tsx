@@ -177,13 +177,18 @@ const Ptr89Page: Component = () => {
 						arch: fullflash.arch,
 					})));
 				} catch (err) {
-					searchIssues.push({ fullflashName: fullflash.name, message: getErrorMessage(err) });
+					searchIssues.push({
+						fullflashId: fullflash.id,
+						fullflashName: fullflash.name,
+						message: getErrorMessage(err),
+					});
 				}
 			}
 			if (!resultType)
 				throw new Error(searchIssues.map((issue) => `${issue.fullflashName}: ${issue.message}`).join(" "));
 
 			setSearchResult({
+				fullflashes: searchFullflashes.map((fullflash) => ({ ...fullflash })),
 				matches: foundMatches,
 				issues: searchIssues,
 				type: resultType,
