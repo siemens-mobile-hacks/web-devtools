@@ -7,7 +7,8 @@ import {
 } from "@/utils/c166";
 import { formatAddress, formatLittleEndian32 } from "@/utils/format";
 
-const MAX_PHYSICAL_ADDRESS = 0xFFFFFF;
+export const MAX_C166_ADDRESS = 0xFFFFFF;
+const MAX_ADDRESS = 0xFFFFFFFF;
 
 export type CalculatorFieldName =
 	| "physicalAddress"
@@ -64,18 +65,16 @@ const parsePackedPointer = (value: string, maximumPage: number, maximumOffset: n
 const getPhysicalAddress = (field: CalculatorFieldName, value: string, base: number): number | undefined => {
 	switch (field) {
 		case "physicalAddress":
-			return parseHex(value, MAX_PHYSICAL_ADDRESS);
-		case "physicalAddressBytes": {
-			const address = parseLittleEndian32(value);
-			return address !== undefined && address <= MAX_PHYSICAL_ADDRESS ? address : undefined;
-		}
+			return parseHex(value, MAX_ADDRESS);
+		case "physicalAddressBytes":
+			return parseLittleEndian32(value);
 		case "fileOffset": {
-			const offset = parseHex(value, MAX_PHYSICAL_ADDRESS);
-			return offset !== undefined && base + offset <= MAX_PHYSICAL_ADDRESS ? base + offset : undefined;
+			const offset = parseHex(value, MAX_ADDRESS);
+			return offset !== undefined && base + offset <= MAX_ADDRESS ? base + offset : undefined;
 		}
 		case "fileOffsetBytes": {
 			const offset = parseLittleEndian32(value);
-			return offset !== undefined && base + offset <= MAX_PHYSICAL_ADDRESS ? base + offset : undefined;
+			return offset !== undefined && base + offset <= MAX_ADDRESS ? base + offset : undefined;
 		}
 		case "codePointer": {
 			const pointer = parsePointer(value, 0xFF, 0xFFFF);
@@ -97,19 +96,30 @@ const getPhysicalAddress = (field: CalculatorFieldName, value: string, base: num
 };
 
 const calculateValues = (physicalAddress: number, base: number): CalculatorValues => {
-	const codePointer = physicalToC166CodePointer(physicalAddress);
-	const dataPointer = physicalToC166DataPointer(physicalAddress);
 	const fileOffset = physicalAddress >= base ? physicalAddress - base : undefined;
+	let codePointer = "";
+	let dataPointer = "";
+	let codePointerBytes = "";
+	let dataPointerBytes = "";
+
+	if (physicalAddress <= MAX_C166_ADDRESS) {
+		const code = physicalToC166CodePointer(physicalAddress);
+		const data = physicalToC166DataPointer(physicalAddress);
+		codePointer = `${formatHex(code.segment, 2)}:${formatHex(code.offset, 4)}`;
+		dataPointer = `${formatHex(data.page, 4)}:${formatHex(data.offset, 4)}`;
+		codePointerBytes = formatLittleEndian32(code.segment * 0x10000 + code.offset);
+		dataPointerBytes = formatLittleEndian32(data.page * 0x10000 + data.offset);
+	}
 
 	return {
 		physicalAddress: formatAddress(physicalAddress),
 		physicalAddressBytes: formatLittleEndian32(physicalAddress),
 		fileOffset: fileOffset === undefined ? "" : formatAddress(fileOffset),
 		fileOffsetBytes: fileOffset === undefined ? "" : formatLittleEndian32(fileOffset),
-		codePointer: `${formatHex(codePointer.segment, 2)}:${formatHex(codePointer.offset, 4)}`,
-		dataPointer: `${formatHex(dataPointer.page, 4)}:${formatHex(dataPointer.offset, 4)}`,
-		codePointerBytes: formatLittleEndian32(codePointer.segment * 0x10000 + codePointer.offset),
-		dataPointerBytes: formatLittleEndian32(dataPointer.page * 0x10000 + dataPointer.offset),
+		codePointer,
+		dataPointer,
+		codePointerBytes,
+		dataPointerBytes,
 	};
 };
 
@@ -137,7 +147,7 @@ export const useC166CalculatorState = createStoreWithApi(
 		setBaseValue(value: string) {
 			setState("baseValue", value);
 
-			const base = parseHex(value, MAX_PHYSICAL_ADDRESS);
+			const base = parseHex(value, MAX_ADDRESS);
 			if (base === undefined)
 				return;
 

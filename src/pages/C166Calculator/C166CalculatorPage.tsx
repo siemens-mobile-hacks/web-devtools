@@ -3,6 +3,7 @@ import { Form } from "solid-bootstrap";
 import clsx from "clsx";
 import {
 	type CalculatorFieldName,
+	MAX_C166_ADDRESS,
 	useC166CalculatorState,
 } from "@/pages/C166Calculator/store/c166CalculatorState";
 import "@/pages/C166Calculator/C166CalculatorPage.scss";
@@ -11,6 +12,7 @@ interface CalculatorInputProps {
 	id: string;
 	value: string;
 	active: boolean;
+	disabled?: boolean;
 	stacked?: boolean;
 	ariaLabel?: string;
 	onInput: (value: string) => void;
@@ -20,11 +22,12 @@ const columns: Array<{
 	label: string;
 	field: CalculatorFieldName;
 	bytesField: CalculatorFieldName;
+	c166?: boolean;
 }> = [
 	{ label: "Physical", field: "physicalAddress", bytesField: "physicalAddressBytes" },
 	{ label: "Offset", field: "fileOffset", bytesField: "fileOffsetBytes" },
-	{ label: "SEG:SOF (CODE)", field: "codePointer", bytesField: "codePointerBytes" },
-	{ label: "PAG:POF (DATA)", field: "dataPointer", bytesField: "dataPointerBytes" },
+	{ label: "SEG:SOF (CODE)", field: "codePointer", bytesField: "codePointerBytes", c166: true },
+	{ label: "PAG:POF (DATA)", field: "dataPointer", bytesField: "dataPointerBytes", c166: true },
 ];
 
 const CalculatorInput: Component<CalculatorInputProps> = (props) => (
@@ -37,6 +40,7 @@ const CalculatorInput: Component<CalculatorInputProps> = (props) => (
 			props.active && "c166-calculator-input--source"
 		)}
 		value={props.value}
+		disabled={props.disabled}
 		aria-label={props.ariaLabel}
 		autocomplete="off"
 		spellcheck={false}
@@ -46,6 +50,7 @@ const CalculatorInput: Component<CalculatorInputProps> = (props) => (
 
 const C166CalculatorPage: Component = () => {
 	const [state, calculator] = useC166CalculatorState();
+	const c166Disabled = () => state.physicalAddress > MAX_C166_ADDRESS;
 
 	return (
 		<>
@@ -56,8 +61,8 @@ const C166CalculatorPage: Component = () => {
 				</Form.Label>
 				<input
 					id="c166-fullflash-base"
-					size={8}
-					maxLength={8}
+					size={10}
+					maxLength={10}
 					class="form-control font-monospace"
 					value={state.baseValue}
 					autocomplete="off"
@@ -76,12 +81,14 @@ const C166CalculatorPage: Component = () => {
 							id={`c166-${column.field}`}
 							value={calculator.getFieldValue(column.field)}
 							active={state.source === column.field}
+							disabled={column.c166 && c166Disabled()}
 							onInput={(value) => calculator.setFieldValue(column.field, value)}
 						/>
 						<CalculatorInput
 							id={`c166-${column.bytesField}`}
 							value={calculator.getFieldValue(column.bytesField)}
 							active={state.source === column.bytesField}
+							disabled={column.c166 && c166Disabled()}
 							stacked
 							ariaLabel={`${column.label} bytes`}
 							onInput={(value) => calculator.setFieldValue(column.bytesField, value)}
