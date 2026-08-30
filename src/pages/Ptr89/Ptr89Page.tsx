@@ -89,17 +89,18 @@ const Ptr89Page: Component = () => {
 		}
 	};
 
-	const handleSaveSettings = (settings: Fullflash[]) => {
-		if (ptr89.updateFullflashes(settings)) {
+	const handleSaveSettings = async (settings: Fullflash[]) => {
+		const savedIds = new Set(settings.map((fullflash) => fullflash.id));
+		const removedFullflashes = ptr89State.fullflashes.filter((fullflash) => !savedIds.has(fullflash.id));
+
+		for (const fullflash of removedFullflashes)
+			await ptr89.removeFullflash(fullflash.id);
+
+		const settingsChanged = ptr89.updateFullflashes(settings);
+		if (removedFullflashes.length || settingsChanged) {
 			setSearchResult(undefined);
 			setXrefResult(undefined);
 		}
-	};
-
-	const handleRemove = async (id: string) => {
-		await ptr89.removeFullflash(id);
-		setSearchResult(undefined);
-		setXrefResult(undefined);
 	};
 
 	const handleFullflashToggle = (id: string, enabled: boolean) => {
@@ -355,7 +356,6 @@ const Ptr89Page: Component = () => {
 					fullflashes={ptr89State.fullflashes}
 					folders={folders()}
 					onSave={handleSaveSettings}
-					onRemove={handleRemove}
 					onHide={() => setSettingsOpen(false)}
 				/>
 			</Show>
