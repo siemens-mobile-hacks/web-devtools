@@ -50,6 +50,39 @@ const SwilibSummaryAnalysisPage: Component = () => {
 			return [platform, total ? Math.round(coverage / total) : 0];
 		}));
 	});
+	const targetsWithErrors = createMemo(() => {
+		const analysis = summaryAnalysis();
+		if (!analysis)
+			return [];
+
+		return (devices() ?? [])
+			.filter((device) => analysis.coverage[device.target] != null)
+			.map((device) => {
+				let errors = 0;
+				let missing = 0;
+				for (const entry of analysis.entries) {
+					if (entry.type == SwilibEntryType.EMPTY || entry.coverage[device.platform] == -200)
+						continue;
+					if (entry.targets.includes(device.target))
+						continue;
+
+					if (device.target in entry.values) {
+						errors++;
+					} else {
+						missing++;
+					}
+				}
+
+				return {
+					model: device.model,
+					sw: device.sw,
+					coverage: Math.round(analysis.coverage[device.target]),
+					errors,
+					missing,
+				};
+			})
+			.filter((target) => target.errors > 0 || target.missing > 0);
+	});
 
 	const handleFilterByType = (e: Event & { currentTarget: HTMLInputElement }) => {
 		if (e.currentTarget.checked)
@@ -175,25 +208,82 @@ const SwilibSummaryAnalysisPage: Component = () => {
 				Next free ID: <b>{formatId(summaryAnalysis()!.nextId)}</b>
 			</div>
 
-			<table class="table table-bordered w-auto mb-3">
-				<caption class="visually-hidden">Coverage by platform</caption>
-				<thead>
-					<tr>
-						<th scope="col"><small>Platform</small></th>
-						<For each={SWILIB_PLATFORMS}>{(platform) =>
-							<th scope="col" class="text-center"><small>{platform}</small></th>
-						}</For>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<th scope="row"><small>Coverage</small></th>
-						<For each={SWILIB_PLATFORMS}>{(platform) =>
-							<td class="text-center">{coverageByPlatform()[platform]}%</td>
-						}</For>
-					</tr>
-				</tbody>
-			</table>
+			<Show when={tableOptions.coverageType == 'PTR'}>
+				<table class="table table-bordered w-auto mb-3">
+					<caption class="visually-hidden">Coverage by platform</caption>
+					<thead>
+						<tr>
+							<th scope="col"><small>Platform</small></th>
+							<For each={SWILIB_PLATFORMS}>{(platform) =>
+								<th scope="col" class="text-center"><small>{platform}</small></th>
+							}</For>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<th scope="row"><small>Coverage</small></th>
+							<For each={SWILIB_PLATFORMS}>{(platform) =>
+								<td class="text-center"><small>{coverageByPlatform()[platform]}%</small></td>
+							}</For>
+						</tr>
+					</tbody>
+				</table>
+			</Show>
+
+			<Show when={tableOptions.coverageType == 'SWI' && targetsWithErrors().length}>
+				<table class="table table-bordered table-sm w-auto mb-3">
+					<caption class="visually-hidden">Targets with errors</caption>
+					<thead>
+						<tr>
+							<th scope="col"><small>Target</small></th>
+							<For each={targetsWithErrors()}>{(target) =>
+								<th scope="col" class="text-center">
+									<small>
+										{target.model}<br />
+										<span class="text-muted">v{target.sw}</span>
+									</small>
+								</th>
+							}</For>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<th scope="row"><small>Coverage</small></th>
+							<For each={targetsWithErrors()}>{(target) =>
+								<td class="text-center"><small>{target.coverage}%</small></td>
+							}</For>
+						</tr>
+						<tr>
+							<th scope="row"><small>Errors</small></th>
+							<For each={targetsWithErrors()}>{(target) =>
+								<td
+									class="text-center"
+									classList={{
+										'table-danger': target.errors > 0,
+										'table-success': target.errors == 0,
+									}}
+								>
+									<small>{target.errors}</small>
+								</td>
+							}</For>
+						</tr>
+						<tr>
+							<th scope="row"><small>Missing</small></th>
+							<For each={targetsWithErrors()}>{(target) =>
+								<td
+									class="text-center"
+									classList={{
+										'table-warning': target.missing > 0,
+										'table-success': target.missing == 0,
+									}}
+								>
+									<small>{target.missing}</small>
+								</td>
+							}</For>
+						</tr>
+					</tbody>
+				</table>
+			</Show>
 
 			<For each={groups()}>{(file) =>
 				<SwilibTable
