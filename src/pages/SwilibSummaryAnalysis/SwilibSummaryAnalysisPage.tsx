@@ -14,7 +14,6 @@ import {
 import { formatId } from "@/utils/format";
 import { SwilibEntryModal } from "@/pages/SwilibSummaryAnalysis/SwilibEntryModal";
 import { useResourcesState } from "@/hooks/useResourcesState";
-import { SwilibStatistic } from "@/components/Swilib/SwilibStatistic";
 
 const SwilibSummaryAnalysisPage: Component = () => {
 	const [tableOptions, setTableOptions] = useSwilibTableOptionsStore();
@@ -24,30 +23,32 @@ const SwilibSummaryAnalysisPage: Component = () => {
 	const [selectedEntry, setSelectedEntry] = createSignal<SummarySwilibAnalysisEntry>();
 
 	const resourcesState = useResourcesState([devices, summaryAnalysis], { catchError: true });
-	const patternsStatistic = createMemo(() => {
-		let good = 0;
-		let missing = 0;
+	const coverageByPlatform = createMemo(() => {
+		const statistics: Record<string, { coverage: number; total: number }> = {};
+		for (const platform of SWILIB_PLATFORMS)
+			statistics[platform] = { coverage: 0, total: 0 };
 
 		for (const entry of summaryAnalysis()?.entries ?? []) {
 			if (entry.type == SwilibEntryType.EMPTY)
 				continue;
 
-			const coverage = getPatternsCoverage(entry.patterns, entry.coverage);
+			const coverage = tableOptions.coverageType == 'PTR' ?
+				getPatternsCoverage(entry.patterns, entry.coverage) :
+				entry.coverage;
 			for (const platform of SWILIB_PLATFORMS) {
-				if (coverage[platform] == 100 || coverage[platform] == 200) {
-					good++;
-				} else if (coverage[platform] == 0) {
-					missing++;
-				}
+				const value = coverage[platform];
+				if (value == null || value == -200)
+					continue;
+
+				statistics[platform].total++;
+				statistics[platform].coverage += value == 200 ? 100 : value;
 			}
 		}
 
-		return {
-			bad: 0,
-			good,
-			missing,
-			total: good + missing,
-		};
+		return Object.fromEntries(SWILIB_PLATFORMS.map((platform) => {
+			const { coverage, total } = statistics[platform];
+			return [platform, total ? Math.round(coverage / total) : 0];
+		}));
 	});
 
 	const handleFilterByType = (e: Event & { currentTarget: HTMLInputElement }) => {
@@ -174,9 +175,25 @@ const SwilibSummaryAnalysisPage: Component = () => {
 				Next free ID: <b>{formatId(summaryAnalysis()!.nextId)}</b>
 			</div>
 
-			<Show when={tableOptions.coverageType == 'PTR'}>
-				<SwilibStatistic statistic={patternsStatistic()} />
-			</Show>
+			<table class="table table-bordered w-auto mb-3">
+				<caption class="visually-hidden">Coverage by platform</caption>
+				<thead>
+					<tr>
+						<th scope="col"><small>Platform</small></th>
+						<For each={SWILIB_PLATFORMS}>{(platform) =>
+							<th scope="col" class="text-center"><small>{platform}</small></th>
+						}</For>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<th scope="row"><small>Coverage</small></th>
+						<For each={SWILIB_PLATFORMS}>{(platform) =>
+							<td class="text-center">{coverageByPlatform()[platform]}%</td>
+						}</For>
+					</tr>
+				</tbody>
+			</table>
 
 			<For each={groups()}>{(file) =>
 				<SwilibTable
