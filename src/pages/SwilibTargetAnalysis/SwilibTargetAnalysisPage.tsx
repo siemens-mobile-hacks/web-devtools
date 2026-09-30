@@ -12,7 +12,7 @@ import {
 	SummarySwilibAnalysisEntry,
 	SWILIB_PLATFORMS,
 } from "@/api/swilib";
-import { SwilibStatistic } from "@/pages/SwilibTargetAnalysis/SwilibStatistic";
+import { SwilibStatistic } from "@/components/Swilib/SwilibStatistic";
 import { SwilibTable } from "@/pages/SwilibTargetAnalysis/SwilibTable";
 import { SwilibEntryModal } from "@/pages/SwilibSummaryAnalysis/SwilibEntryModal";
 import { useResourcesState } from "@/hooks/useResourcesState";

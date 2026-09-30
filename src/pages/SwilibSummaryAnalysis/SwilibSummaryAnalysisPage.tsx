@@ -1,12 +1,20 @@
-import { Component, createResource, createSignal, For, Show } from "solid-js";
+import { Component, createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { useSwilibTableOptionsStore } from "@/store/swilibTableOptionsStore";
 import { SwilibTargetsTabs } from "@/components/Swilib/SwilibTargetsTabs";
 import { Button, Form, Spinner } from "solid-bootstrap";
 import { SwilibTable } from "@/pages/SwilibSummaryAnalysis/SwilibTable";
-import { getAvailableSwilibDevices, getSummarySwilibAnalysis, SummarySwilibAnalysisEntry } from "@/api/swilib";
+import {
+	getAvailableSwilibDevices,
+	getPatternsCoverage,
+	getSummarySwilibAnalysis,
+	SummarySwilibAnalysisEntry,
+	SWILIB_PLATFORMS,
+	SwilibEntryType,
+} from "@/api/swilib";
 import { formatId } from "@/utils/format";
 import { SwilibEntryModal } from "@/pages/SwilibSummaryAnalysis/SwilibEntryModal";
 import { useResourcesState } from "@/hooks/useResourcesState";
+import { SwilibStatistic } from "@/components/Swilib/SwilibStatistic";
 
 const SwilibSummaryAnalysisPage: Component = () => {
 	const [tableOptions, setTableOptions] = useSwilibTableOptionsStore();
@@ -16,6 +24,31 @@ const SwilibSummaryAnalysisPage: Component = () => {
 	const [selectedEntry, setSelectedEntry] = createSignal<SummarySwilibAnalysisEntry>();
 
 	const resourcesState = useResourcesState([devices, summaryAnalysis], { catchError: true });
+	const patternsStatistic = createMemo(() => {
+		let good = 0;
+		let missing = 0;
+
+		for (const entry of summaryAnalysis()?.entries ?? []) {
+			if (entry.type == SwilibEntryType.EMPTY)
+				continue;
+
+			const coverage = getPatternsCoverage(entry.patterns, entry.coverage);
+			for (const platform of SWILIB_PLATFORMS) {
+				if (coverage[platform] == 100 || coverage[platform] == 200) {
+					good++;
+				} else if (coverage[platform] == 0) {
+					missing++;
+				}
+			}
+		}
+
+		return {
+			bad: 0,
+			good,
+			missing,
+			total: good + missing,
+		};
+	});
 
 	const handleFilterByType = (e: Event & { currentTarget: HTMLInputElement }) => {
 		if (e.currentTarget.checked)
@@ -140,6 +173,10 @@ const SwilibSummaryAnalysisPage: Component = () => {
 				<span class="bi bi-info-circle"></span> {' '}
 				Next free ID: <b>{formatId(summaryAnalysis()!.nextId)}</b>
 			</div>
+
+			<Show when={tableOptions.coverageType == 'PTR'}>
+				<SwilibStatistic statistic={patternsStatistic()} />
+			</Show>
 
 			<For each={groups()}>{(file) =>
 				<SwilibTable

@@ -1,9 +1,15 @@
 import { Component } from "solid-js";
 import { Badge } from "solid-bootstrap";
-import { TargetSwilibAnalysis } from "@/api/swilib";
+
+interface SwilibStatisticValue {
+	bad: number;
+	good: number;
+	missing: number;
+	total: number;
+}
 
 interface SwilibStatisticProps {
-	statistic: TargetSwilibAnalysis['statistic'];
+	statistic: SwilibStatisticValue;
 }
 
 export const SwilibStatistic: Component<SwilibStatisticProps> = (props) => {
