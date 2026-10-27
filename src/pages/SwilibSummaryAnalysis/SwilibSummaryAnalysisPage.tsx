@@ -61,14 +61,12 @@ const SwilibSummaryAnalysisPage: Component = () => {
 				let errors = 0;
 				let missing = 0;
 				for (const entry of analysis.entries) {
-					if (entry.type == SwilibEntryType.EMPTY || entry.coverage[device.platform] == -200)
-						continue;
-					if (entry.targets.includes(device.target))
+					if (entry.type == SwilibEntryType.EMPTY || entry.targets.includes(device.target))
 						continue;
 
 					if (device.target in entry.values) {
 						errors++;
-					} else {
+					} else if (Math.abs(entry.coverage[device.platform]) != 200) {
 						missing++;
 					}
 				}

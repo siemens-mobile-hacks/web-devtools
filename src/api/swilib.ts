@@ -60,6 +60,8 @@ export interface TargetSwilibAnalysis {
 		good: number;
 		missing: number;
 		total: number;
+		builtin: number;
+		unavailable: number;
 		unused: number;
 	};
 	entries: TargetSwilibAnalysisEntry[];
